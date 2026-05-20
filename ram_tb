@@ -1,0 +1,80 @@
+// single port RAM 
+module top #(parameter data_width=32,
+             parameter addr_width=6,
+             parameter depth = 64) ();
+  reg clk,rstn,en,wr_rd;
+  reg [addr_width-1:0]addr;
+  reg [data_width-1:0]data_in;
+  wire output_en;
+  wire [data_width-1:0]data_out;
+  reg [data_width-1:0] temp [depth-1:0]; //internal memory declaration
+  reg [addr_width-1:0]addr_l;
+  reg [data_width-1:0]data_outl;
+  
+  ram #(.data_width(data_width),.addr_width(addr_width),.depth(depth))
+  dut(clk,rstn,en,wr_rd,addr,data_in,output_en,data_out);
+  
+  initial begin 
+    clk=0;
+  end
+  always #5 clk=~clk;
+  
+  initial begin
+    en=1;
+    rstn=0;#10;
+    rstn=1;
+  end
+  
+  initial begin 
+    repeat(20) begin
+    write_mem();#50;
+    read_mem();
+    comp();
+    end
+  end
+  
+  task write_mem();
+    @(posedge clk);
+    wr_rd=1;//write operation
+    data_in=$random;
+    addr=$random % depth;
+    addr_l=addr;
+    temp[addr_l]=data_in;
+    $display("write packet : en=%h wr_rd=%h data_in=%h addr=%h",en,wr_rd,data_in,addr);
+    @(posedge clk)
+    wr_rd=0;
+  endtask
+  
+  task read_mem();
+    @(posedge clk);
+    wr_rd=0;//read operation
+    addr_l=addr;
+    wait(output_en) begin
+      data_outl=data_out;
+    end
+    $display("read packet : en=%h wr_rd=%h data_out=%h addr=%h",en,wr_rd,data_out,addr);
+  endtask
+  
+  task comp();
+    if(temp[addr_l]==data_out)begin
+      $display("RAM PASSED");
+      $display("temp[%h]=%h,data_outl=%h",addr_l,temp[addr_l],data_outl);
+    end
+    else begin
+      $display("RAM FAILED");
+      $display("temp[%h]=%h,data_outl=%h",addr_l,temp[addr_l],data_outl);
+    end
+  endtask
+  
+  initial begin 
+    #500;
+    $finish;
+  end
+  
+   initial begin
+        $dumpfile("wave.vcd");
+        $dumpvars(0, top);
+    end
+endmodule
+    
+    
