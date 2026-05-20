@@ -21,13 +21,15 @@ module ram #(parameter data_width=32,
           end 
         else begin //read operation
           data_out<=mem[addr];
-          output_en<=1'b1;#5;
-          output_en<=1'b0;
+          output_en<=1'b1;
+          
           
           
       end
     end
    end
-   
+  else begin
+    output_en<=0;
+  end
   end
 endmodule
